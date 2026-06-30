@@ -43,12 +43,13 @@ if __name__ == "__main__":
 
     spells: list[str] = ["flash", "meteor", "tsunami", "blizzard"]
 
+    print("\nTesting artifact sorter..\n")
     sorted_artifacts: list[dict[str, Any]] = artifact_sorter(artifacts)
     print(sorted_artifacts)
 
+    print("\nTesting power filter...\n")
     mages_big_power: list[dict[str, Any]] = power_filter(mages, min_power=70)
     print(mages_big_power)
 
+    print("\nTesting spell transformer...\n")
     print(spell_transformer(spells))
-
-    print(mage_stats(mages))

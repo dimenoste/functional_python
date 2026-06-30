@@ -1,6 +1,4 @@
-from types import FunctionType
-from typing import Callable, List, Literal, Protocol, Tuple, cast
-from math import sqrt
+from typing import Callable, List, Tuple
 
 
 type Combiner = Callable[[str, int], Tuple[str, str]]
@@ -9,23 +7,23 @@ type SeqSpells = Callable[[str, int], List[str]]
 type Spell = Callable[[str, int], str]
 
 
-class SpellFunc(Protocol):
-    power_amplified: int | None = 0
+# class SpellFunc(Protocol):
+#     power_amplified: int | None = 0
 
-    def __call__(self, target: str, power: int) -> str:
-        ...
-
-
-class heal(SpellFunc):
-
-    def __call__(self, target: str, power: int) -> str:
-        return f"Heal restores {target} for {power} HP"
+#     def __call__(self, target: str, power: int) -> str:
+#         ...
 
 
-print("sssssssssssssssssssssssssss", heal()("Dragon", 10))
+# class heal(SpellFunc):
 
-# def heal(target: str, power: int) -> str:
-#     return f"Heal restores {target} for {power} HP"
+#     def __call__(self, target: str, power: int) -> str:
+#         return f"Heal restores {target} for {power} HP"
+
+
+# print("sssssssssssssssssssssssssss", heal()("Dragon", 10))
+
+def heal(target: str, power: int) -> str:
+    return f"Heal restores {target} for {power} HP"
 
 
 def fireball(target: str, power: int) -> str:
@@ -41,26 +39,27 @@ def spell_combiner(spell1: Spell, spell2: Spell) -> Combiner:
     return combiner
 
 
-def power_amplifier_orig(base_spell: SpellFunc, multiplier: int) -> SpellFunc:
-    if not callable(base_spell):
-        raise TypeError("argument base_spell must be a function")
-
-    class amplified_spell(SpellFunc):
-        def  __call__(self, target: str, power: int) -> str:
-            amplified_spell.power_amplified = power * multiplier
-            return base_spell(target, power * multiplier)
-    return amplified_spell()
-
-
-# def power_amplifier(base_spell: SpellFunc,
-#                     multiplier: int) -> SpellFunc:
+# def power_amplifier_orig(base_spell: SpellFunc,
+# multiplier: int) -> SpellFunc:
 #     if not callable(base_spell):
 #         raise TypeError("argument base_spell must be a function")
 
-#     def amplified_spell(target: str, power: int) -> str:
-#         base_spell.power_amplified = multiplier * power
-#         return base_spell(target, base_spell.power_amplified)
-#     return cast(SpellFunc, amplified_spell)
+#     class amplified_spell(SpellFunc):
+#         def  __call__(self, target: str, power: int) -> str:
+#             amplified_spell.power_amplified = power * multiplier
+#             return base_spell(target, power * multiplier)
+#     return amplified_spell()
+
+
+def power_amplifier(base_spell: Spell,
+                    multiplier: int) -> Spell:
+    if not callable(base_spell):
+        raise TypeError("argument base_spell must be a function")
+
+    def amplified_spell(target: str, power: int) -> str:
+        power_amplified: int = multiplier * power
+        return base_spell(target, power_amplified)
+    return amplified_spell
 
 
 def test_condition(target: str, power: int) -> bool:
@@ -68,18 +67,18 @@ def test_condition(target: str, power: int) -> bool:
             and power > 10)
 
 
-# def conditional_caster(condition: Conditional, spell: SpellFunc) -> SpellFunc:
-#     if not (callable(spell) and callable(condition)):
-#         raise TypeError("arguments must be a functions")
+def conditional_caster(condition: Conditional, spell: Spell) -> Spell:
+    if not (callable(spell) and callable(condition)):
+        raise TypeError("arguments must be a functions")
 
-#     def caster(target: str, power: int) -> str:
-#         if not condition(target, power):
-#             return "Spell fizzled"
-#         return spell(target, power)
-#     return caster
+    def caster(target: str, power: int) -> str:
+        if not condition(target, power):
+            return "Spell fizzled"
+        return spell(target, power)
+    return caster
 
 
-def spell_sequence(spells: List[SpellFunc]) -> SeqSpells:
+def spell_sequence(spells: List[Spell]) -> SeqSpells:
     def cast_in_order(target: str, power: int) -> List[str]:
         return [s(target, power) for s in spells]
     return cast_in_order
@@ -90,7 +89,6 @@ if __name__ == "__main__":
         target = "Dragon"
         power = 10
         print("Testing spell combiner...")
-
         combined: Combiner = spell_combiner(fireball, heal)
         combi: Tuple[str, str] = combined(target, power)
         print("Combined spell result:", sep=" ")
@@ -100,14 +98,30 @@ if __name__ == "__main__":
         print("Testing power amplifier...")
         original: int = power
         # fireball_spell: SpellFunc = cast(SpellFunc, fireball)
-        heal_fn = heal()
-        mega_fireball: SpellFunc = power_amplifier_orig(heal_fn, 5)
+        mega_fireball: Spell = power_amplifier(heal, 5)
         print(f"Original power : {power}, Transformed power : {5*power}")
         ampli_spell: str = mega_fireball(target, power)
         print(ampli_spell)
-        # ampli: list[int] = [int(s) for s in ampli_spell.split() if s.isdigit()]
-        print(f"Original: {original}, Amplified:\
-              {mega_fireball.power_amplified}")
+
+        # print()
+        # print("Testing power amplifier...")
+        # original: int = power
+        # # fireball_spell: SpellFunc = cast(SpellFunc, fireball)
+        # heal_fn = heal()
+        # mega_fireball: SpellFunc = power_amplifier_orig(heal_fn, 5)
+        # print(f"Original power : {power}, Transformed power : {5*power}")
+        # ampli_spell: str = mega_fireball(target, power)
+        # print(ampli_spell)
+        # # ampli: list[int] = [int(s) for s in ampli_spell.split() \
+        # if s.isdigit()]
+        # print(f"Original: {original}, Amplified:\
+        #       {mega_fireball.power_amplified}")
+
+        print()
+        print("Testing conditional caster...")
+        cast_if: Spell = conditional_caster(test_condition, fireball)
+        print(cast_if(target, power))
+        print(cast_if(target, 60))
 
     except TypeError as e:
         print(e)
